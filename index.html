@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Insulina Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="max-w-md mx-auto p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-800">InsuliCalc</h1>
+            <p class="text-slate-500 text-sm">Automação de Dose e Correção</p>
+        </header>
+
+        <div class="glass-card rounded-2xl p-6 shadow-xl mb-6">
+            <div class="flex items-center mb-4 text-blue-600">
+                <i class="fas fa-user-md mr-2"></i>
+                <h2 class="font-semibold text-lg">Parâmetros Médicos</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Meta Glicêmica (mg/dL)</label>
+                    <input type="number" id="target" value="100" class="w-full p-2 bg-slate-100 rounded-lg border-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Fator Sensib. (FS)</label>
+                    <input type="number" id="fs" value="50" class="w-full p-2 bg-slate-100 rounded-lg border-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Rel. Insulina/Carbo (1U para Xg)</label>
+                    <input type="number" id="relCho" value="15" class="w-full p-2 bg-slate-100 rounded-lg border-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 shadow-xl mb-6 border-l-4 border-blue-500">
+            <div class="flex items-center mb-4 text-slate-700">
+                <i class="fas fa- syringe mr-2"></i>
+                <h2 class="font-semibold text-lg">Medição e Alimento</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Glicemia Atual (mg/dL)</label>
+                    <input type="number" id="currentGlucose" placeholder="Ex: 180" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xl font-bold">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Total de Carboidratos (g)</label>
+                    <input type="number" id="totalCho" placeholder="Ex: 45" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xl font-bold">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="calculateDose()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all transform active:scale-95 mb-8">
+            CALCULAR DOSE
+        </button>
+
+        <div id="resultCard" class="hidden glass-card rounded-3xl p-8 shadow-2xl text-center border-2 border-blue-100">
+            <h3 class="text-slate-500 uppercase tracking-widest text-xs font-bold mb-2">Dose Total Recomendada</h3>
+            <div class="text-6xl font-black text-blue-600 mb-4" id="totalDose">0.0</div>
+            <p class="text-sm text-slate-400 mb-6 italic">*Sempre confirme com sua orientação médica antes de aplicar.</p>
+            
+            <div class="grid grid-cols-2 gap-4 text-left border-t pt-4">
+                <div>
+                    <span class="block text-[10px] text-slate-400 uppercase">Correção</span>
+                    <span class="font-bold text-slate-700" id="correctionDoseDisplay">0U</span>
+                </div>
+                <div>
+                    <span class="block text-[10px] text-slate-400 uppercase">Alimentação</span>
+                    <span class="font-bold text-slate-700" id="foodDoseDisplay">0U</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateDose() {
+            // Pegando valores dos inputs
+            const target = parseFloat(document.getElementById('target').value);
+            const fs = parseFloat(document.getElementById('fs').value);
+            const relCho = parseFloat(document.getElementById('relCho').value);
+            const currentGlucose = parseFloat(document.getElementById('currentGlucose').value);
+            const totalCho = parseFloat(document.getElementById('totalCho').value);
+
+            if (isNaN(currentGlucose) || isNaN(totalCho)) {
+                alert("Por favor, preencha a glicemia e os carboidratos.");
+                return;
+            }
+
+            // 1. Cálculo da Dose de Correção (Bolus de Correção)
+            // Fórmula: (Glicemia Atual - Meta) / Fator de Sensibilidade
+            let correctionDose = 0;
+            if (currentGlucose > target) {
+                correctionDose = (currentGlucose - target) / fs;
+            }
+
+            // 2. Cálculo da Dose para Alimento (Bolus Alimentar)
+            // Fórmula: Total Carbo / Relação Insulina-Carbo
+            let foodDose = totalCho / relCho;
+
+            // 3. Dose Total
+            const total = correctionDose + foodDose;
+
+            // Exibir resultados
+            document.getElementById('resultCard').classList.remove('hidden');
+            document.getElementById('totalDose').innerText = total.toFixed(1) + "U";
+            document.getElementById('correctionDoseDisplay').innerText = correctionDose.toFixed(1) + "U";
+            document.getElementById('foodDoseDisplay').innerText = foodDose.toFixed(1) + "U";
+            
+            // Scroll suave para o resultado
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
